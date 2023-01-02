@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  # sbt:
+  #   build:
+  #     context: ./
+  #   image: sbt
+  #   ports:
+  #     - "9000:9000"
+  #   networks:
+  #     - classroom-net
+  #   volumes:
+  #     - ~/.sbt:/root/.sbt
+  #     - ~/.ivy2:/root/.ivy2
+  #     - ~/.m2:/root/.m2
+  postgresql:
+    image: postgres:14
+    container_name: postgresql
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./script:/docker-entrypoint-initdb.d
+      - db-store:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=developer
+      - POSTGRES_PASSWORD=p@ssw0rd
+      - POSTGRES_DB=chatroom
+    # networks:
+    #   - classroom-net
+    tty: true
+    restart: always
+volumes:
+  db-store:
+# networks:
+#   classroom-net:
+#     name: classroom-net
+#     driver: bridge
