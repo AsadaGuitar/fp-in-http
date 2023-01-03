@@ -15,68 +15,67 @@ import cats.effect.*
 import doobie.*
 import doobie.implicits.*
 
-
 trait UserService[F[_]]:
-    def create(cmd: CreateCommand): EitherT[F, CreateError, Done]
-    def findById(cmd: FindByIdCommand): EitherT[F, FindByIdError, User]
-
+  def create(cmd: CreateCommand): EitherT[F, CreateError, Done]
+  def findById(cmd: FindByIdCommand): EitherT[F, FindByIdError, User]
 
 object UserService:
 
-    type CreateError = AppError.AlreadyExistsError
-    case class CreateCommand(
-        id: User.Id,
-        name: User.Name,
-        password: User.Password
-    )
+  type CreateError = AppError.AlreadyExistsError
+  case class CreateCommand(
+      id: User.Id,
+      name: User.Name,
+      password: User.Password
+  )
 
-    type FindByIdError = AppError.NotFoundError 
-    case class FindByIdCommand(id: User.Id)
+  type FindByIdError = AppError.NotFoundError
+  case class FindByIdCommand(id: User.Id)
 
-    def impl[F[_]](xa: Transactor[F])(using sync: Sync[F]) = new UserService[F] {
-        
-        def create(cmd: CreateCommand): EitherT[F, CreateError, Done] = {
-            val CreateCommand(id, name, password) = cmd
-            EitherT {
-                {
-                    for
-                        exists <- UsersRepository.existsById(id).transact(xa)
-                        _ <- {
-                            if exists then
-                                sync.raiseError(AppError.AlreadyExistsError(s"Already exists $id")) 
-                            else 
-                                sync.unit
-                        }
-                        now <- sync.realTimeInstant
-                        user = User(
-                            id = id,
-                            name = name,
-                            password = password,
-                            isClosed = false,
-                            createdAt = now,
-                            modifiedAt = none,
-                            closedAt = none
-                        )
-                        _ <- UsersRepository.insert(user).run.transact(xa)
-                    yield
-                        Done.asRight
-                }
-                .handleError { 
-                    case e: CreateError => e.asLeft
-                    case e => throw RuntimeException(
-                        s"An unexpected error has occurred, at `UserService.create` value e = $e."
-                    )
-                }
+  def impl[F[_]](xa: Transactor[F])(using sync: Sync[F]) = new UserService[F] {
+
+    def create(cmd: CreateCommand): EitherT[F, CreateError, Done] = {
+      val CreateCommand(id, name, password) = cmd
+      EitherT {
+        {
+          for
+            exists <- UsersRepository.existsById(id).transact(xa)
+            _ <- {
+              if exists then
+                sync.raiseError(
+                  AppError.AlreadyExistsError(s"Already exists $id")
+                )
+              else sync.unit
             }
+            now <- sync.realTimeInstant
+            user = User(
+              id = id,
+              name = name,
+              password = password,
+              isClosed = false,
+              createdAt = now,
+              modifiedAt = none,
+              closedAt = none
+            )
+            _ <- UsersRepository.insert(user).transact(xa)
+          yield Done.asRight
         }
-
-        def findById(cmd: FindByIdCommand): EitherT[F, FindByIdError, User] ={
-            val FindByIdCommand(id) = cmd
-            EitherT {
-                UsersRepository.findById(id).transact(xa).map {
-                    case None => AppError.NotFoundError(s"Not found user $id").asLeft
-                    case Some(value) => value.asRight
-                }
-            }
-        }
+          .handleError {
+            case e: CreateError => e.asLeft
+            case e =>
+              throw RuntimeException(
+                s"An unexpected error has occurred, at `UserService.create` value e = $e."
+              )
+          }
+      }
     }
+
+    def findById(cmd: FindByIdCommand): EitherT[F, FindByIdError, User] = {
+      val FindByIdCommand(id) = cmd
+      EitherT {
+        UsersRepository.findById(id).transact(xa).map {
+          case None => AppError.NotFoundError(s"Not found user $id").asLeft
+          case Some(value) => value.asRight
+        }
+      }
+    }
+  }

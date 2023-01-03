@@ -12,7 +12,7 @@ import com.github.asadaguitar.fpinhttp.service.UserService
 object FpinhttpServer:
 
   def run[F[_]: Async]: F[Nothing] = {
-    for {
+    for
       client <- EmberClientBuilder.default[F].build
       helloWorldAlg = HelloWorld.impl[F]
       jokeAlg = Jokes.impl[F](client)
@@ -37,5 +37,5 @@ object FpinhttpServer:
           .withPort(port"8080")
           .withHttpApp(finalHttpApp)
           .build
-    } yield ()
+    yield ()
   }.useForever

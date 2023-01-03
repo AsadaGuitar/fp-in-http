@@ -19,10 +19,10 @@ object FpinhttpRoutes:
     import dsl._
     HttpRoutes.of[F] {
       case GET -> Root / "joke" =>
-        for {
+        for
           joke <- J.get
           resp <- Ok(joke)
-        } yield resp
+        yield resp
     }
 
   def helloWorldRoutes[F[_]: Sync](H: HelloWorld[F]): HttpRoutes[F] =
@@ -30,12 +30,12 @@ object FpinhttpRoutes:
     import dsl._
     HttpRoutes.of[F] {
       case GET -> Root / "hello" / name =>
-        for {
+        for
           greeting <- H.hello(HelloWorld.Name(name))
           resp <- Ok(greeting)
-        } yield resp
+        yield resp
     }
-
+    
   given Encoder[User] with
     def apply(a: User): Json = Json.obj(
       "id" -> Json.fromString(a.id.asInstanceOf[String]),

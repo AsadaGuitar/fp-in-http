@@ -17,39 +17,40 @@ import com.github.asadaguitar.fpinhttp.models.User.*
 import com.github.asadaguitar.fpinhttp.implicits.*
 
 object UsersRepository:
-    import share.{given, *}
-    import meta.{given, *}
-    
+  import share.{given, *}
+  import meta.{given, *}
 
-    private[repo] object meta:
+  private[repo] object meta:
 
-        given userIdMeta: Meta[User.Id] = Meta[String].imap
-            (s => User.Id(s).unsafeGetValue)
-            (i => i.asInstanceOf[String])
+    given userIdMeta: Meta[User.Id] =
+      Meta[String].imap(s => User.Id(s).unsafeGetValue)(i =>
+        i.asInstanceOf[String]
+      )
 
-        given userNameMeta: Meta[User.Name] = Meta[String].imap
-            (s => User.Name(s).unsafeGetValue)
-            (i => i.asInstanceOf[String])
+    given userNameMeta: Meta[User.Name] =
+      Meta[String].imap(s => User.Name(s).unsafeGetValue)(i =>
+        i.asInstanceOf[String]
+      )
 
-        given userPasswordMeta: Meta[User.Password] = Meta[String].imap
-            (s => User.Password(s).unsafeGetValue)
-            (i => i.asInstanceOf[String])
-    
-    end meta
+    given userPasswordMeta: Meta[User.Password] =
+      Meta[String].imap(s => User.Password(s).unsafeGetValue)(i =>
+        i.asInstanceOf[String]
+      )
 
-    
-    def existsById(id: User.Id): ConnectionIO[Boolean] = {
-        sql"""
-            SELECT EXISTS (
-                SELECT *
+  end meta
+
+  def existsById(id: User.Id): ConnectionIO[Boolean] = {
+    sql"""
+        SELECT EXISTS (
+          SELECT *
                 FROM users
                 WHERE id = $id
             )
         """.query[Boolean].unique
-    }
-    
-    def findById(id: User.Id): ConnectionIO[Option[User]] ={
-        sql"""
+  }
+
+  def findById(id: User.Id): ConnectionIO[Option[User]] = {
+    sql"""
             SELECT 
                 id,
                 name, 
@@ -61,11 +62,12 @@ object UsersRepository:
             FROM users 
             WHERE id = $id
         """.query[User].option
-    }
+  }
 
-    def insert(user: User): Update0 = {
-        val User(id, name, password, isClosed, createdAt, modifiedAt, closedAt) = user
-        sql"""
+  def insert(user: User): ConnectionIO[Int] = {
+    val User(id, name, password, isClosed, createdAt, modifiedAt, closedAt) =
+      user
+    sql"""
             INSERT INTO users(
                 id, 
                 name, 
@@ -83,5 +85,5 @@ object UsersRepository:
                 $modifiedAt, 
                 $closedAt
             )
-        """.update
-    }
+        """.update.run
+  }

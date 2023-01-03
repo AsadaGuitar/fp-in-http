@@ -12,6 +12,6 @@ import java.sql.Timestamp
 
 object share:
 
-    given instantMeta: Meta[Instant] =  Meta[Timestamp].imap
-        (t => t.toLocalDateTime.atZone(ZoneOffset.UTC).toInstant)
-        (i => Timestamp.valueOf(LocalDateTime.ofInstant(i, ZoneOffset.UTC)))
+  given instantMeta: Meta[Instant] = Meta[Timestamp].imap(t =>
+    t.toLocalDateTime.atZone(ZoneOffset.UTC).toInstant
+  )(i => Timestamp.valueOf(LocalDateTime.ofInstant(i, ZoneOffset.UTC)))
