@@ -23,6 +23,7 @@ import com.github.asadaguitar.fpinhttp.routes.Validator
 import com.github.asadaguitar.fpinhttp.routes.ValidationDsl
 import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
+import java.time.Instant
 
 object UsersRoutes:
   import codec.{given, *}
@@ -33,28 +34,18 @@ object UsersRoutes:
   private object codec:
     import org.http4s.circe.CirceEntityCodec._
 
-    given Encoder[User] with
-      def apply(a: User): Json = Json.obj(
-        "id" -> Json.fromString(a.id.asInstanceOf[String]),
-        "name" -> Json.fromString(a.name.asInstanceOf[String]),
-        "password" -> Json.fromString(a.password.asInstanceOf[String]),
-        "is_closed" -> Json.fromString(a.isClosed.toString),
-        "created_at" -> Json.fromString(a.createdAt.toString()),
-        "modified_at" -> Json.fromString(a.modifiedAt.toString()),
-        "closed_at" -> Json.fromString(a.closedAt.toString())
-      )
-
-    given [F[_]]: EntityEncoder[F, User] = jsonEncoderOf[F, User]
-
     given [F[_]: Concurrent]: EntityDecoder[F, CreateRequestJson] =
       jsonOf[F, CreateRequestJson]
 
     given [F[_]]: EntityEncoder[F, CreateResponseJson] = jsonEncoderOf[F, CreateResponseJson]
+
+    given [F[_]]: EntityEncoder[F, FindByIdResponseJson] = jsonEncoderOf[F, FindByIdResponseJson]
     
   end codec
 
   private object protocol:
 
+    case class FindByIdResponseJson(id: String, name: String, created_at: Instant)
     case class CreateRequestJson(id: String, name: String, password: String)
     case class CreateResponseJson(id: String)
 
@@ -93,8 +84,10 @@ object UsersRoutes:
           case Right(value) =>
             val cmd = UserService.FindByIdCommand(id = value)
             US.findById(cmd).value.flatMap {
-              case Right(value) => Ok(value)
-              case Left(value)  => BadRequest()
+              case Right(user) => 
+                val User(id, name, _, _, createdAt, _, _) = user
+                Ok(FindByIdResponseJson(id.show, name.show, createdAt))
+              case Left(value) => BadRequest()
             }
       /** create user */
       case request @ POST -> Root / "users" =>

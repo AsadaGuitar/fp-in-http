@@ -18,26 +18,7 @@ import com.github.asadaguitar.fpinhttp.implicits.*
 
 object UsersRepository:
   import share.{given, *}
-  import meta.{given, *}
-
-  private[repo] object meta:
-
-    given userIdMeta: Meta[User.Id] =
-      Meta[String].imap(s => User.Id(s).unsafeGetValue)(i =>
-        i.asInstanceOf[String]
-      )
-
-    given userNameMeta: Meta[User.Name] =
-      Meta[String].imap(s => User.Name(s).unsafeGetValue)(i =>
-        i.asInstanceOf[String]
-      )
-
-    given userPasswordMeta: Meta[User.Password] =
-      Meta[String].imap(s => User.Password(s).unsafeGetValue)(i =>
-        i.asInstanceOf[String]
-      )
-
-  end meta
+  import User.implicits.{given, *}
 
   def existsById(id: User.Id): ConnectionIO[Boolean] = {
     sql"""
@@ -51,39 +32,38 @@ object UsersRepository:
 
   def findById(id: User.Id): ConnectionIO[Option[User]] = {
     sql"""
-            SELECT 
-                id,
-                name, 
-                password, 
-                is_closed, 
-                created_at, 
-                modified_at, 
-                closed_at 
-            FROM users 
-            WHERE id = $id
+        SELECT 
+          id,
+          name, 
+          password, 
+          is_closed, 
+          created_at, 
+          modified_at, 
+          closed_at 
+        FROM users 
+        WHERE id = $id
         """.query[User].option
   }
 
   def insert(user: User): ConnectionIO[Int] = {
-    val User(id, name, password, isClosed, createdAt, modifiedAt, closedAt) =
-      user
+    val User(id, name, password, isClosed, createdAt, modifiedAt, closedAt) = user
     sql"""
-            INSERT INTO users(
-                id, 
-                name, 
-                password,
-                is_closed, 
-                created_at, 
-                modified_at, 
-                closed_at
-            ) VALUES (
-                $id, 
-                $name, 
-                $password, 
-                $isClosed, 
-                $createdAt, 
-                $modifiedAt, 
-                $closedAt
-            )
+        INSERT INTO users(
+          id, 
+          name, 
+          password,
+          is_closed, 
+          created_at, 
+          modified_at, 
+          closed_at
+        ) VALUES (
+          $id, 
+          $name, 
+          $password, 
+          $isClosed, 
+          $createdAt, 
+          $modifiedAt, 
+          $closedAt
+        )
         """.update.run
   }
