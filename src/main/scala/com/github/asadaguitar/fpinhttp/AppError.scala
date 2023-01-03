@@ -1,6 +1,9 @@
 package com.github.asadaguitar.fpinhttp
 
-enum AppError(msg: String) extends Exception:
-  case ValidationError(msg: String) extends AppError(msg)
-  case AlreadyExistsError(msg: String) extends AppError(msg)
-  case NotFoundError(msg: String) extends AppError(msg)
+sealed trait AppError extends Exception:
+  def msg: String
+
+object AppError:
+  case class ValidationError(msg: String) extends AppError
+  case class AlreadyExistsError(msg: String) extends AppError
+  case class NotFoundError(msg: String) extends AppError

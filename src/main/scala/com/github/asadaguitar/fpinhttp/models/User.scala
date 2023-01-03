@@ -18,42 +18,38 @@ case class User(
 
 object User:
 
-    /** example: 
-      *     @hello
-      *     - head: '@'
-      *     - length: 6 ~ 20
-      */
-    opaque type Id = String
-    
-    /** example:
-      *     hello
-      *     - length: 4 ~ 20
-      */
-    opaque type Name = String
+  /** example:
+    * @hello
+    *   - head: '@'
+    *   - length: 6 ~ 20
+    */
+  opaque type Id = String
 
-    /**
-      * あとでちゃんとしたのにする
-      */
-    opaque type Password = String
+  /** example: hello
+    *   - length: 4 ~ 20
+    */
+  opaque type Name = String
 
-    object Id:
-        def apply(value: String): Either[AppError.ValidationError, Id] = 
-            if value.startsWith("@") && 5 < value.length && value.length < 21 then
-                value.asRight
-            else 
-                AppError.ValidationError("Invalid user ID value.").asLeft
+  /** あとでちゃんとしたのにする
+    */
+  opaque type Password = String
 
-    object Name:
-        def apply(value: String): Either[AppError.ValidationError, Name] = 
-            if 3 < value.length && value.length < 21 then
-                value.asRight
-            else 
-                AppError.ValidationError("Invalid user name value.").asLeft
-    
-    object Password:
-        def apply(value: String): Either[AppError.ValidationError, Password] = 
-            if 3 < value.length && value.length < 21 then
-                value.asRight
-            else 
-                AppError.ValidationError("Invalid user name value.").asLeft
-    
+  object Id:
+    def apply(value: String): Either[AppError.ValidationError, Id] =
+      if value.startsWith("@") && 5 < value.length && value.length < 21 then
+        value.asRight
+      else AppError.ValidationError("Invalid user ID value.").asLeft
+
+  object Name:
+    def apply(value: String): Either[AppError.ValidationError, Name] =
+      if 3 < value.length && value.length < 21 then value.asRight
+      else AppError.ValidationError("Invalid user name value.").asLeft
+
+  object Password:
+    def apply(value: String): Either[AppError.ValidationError, Password] =
+      if 3 < value.length && value.length < 21 then value.asRight
+      else AppError.ValidationError("Invalid user name value.").asLeft
+
+  object implicits:
+    given Show[Id] with
+      def show(t: Id): String = t

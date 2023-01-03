@@ -3,6 +3,7 @@ val MunitVersion = "0.7.29"
 val LogbackVersion = "1.2.6"
 val MunitCatsEffectVersion = "1.0.6"
 val DoobieVersion = "1.0.0-RC1"
+val CircleVersion = "0.14.3"
 
 lazy val root = (project in file("."))
   .settings(
@@ -20,6 +21,7 @@ lazy val root = (project in file("."))
       "ch.qos.logback"  %  "logback-classic"     % LogbackVersion,
       "org.tpolecat"    %% "doobie-core"         % DoobieVersion,
       "org.tpolecat"    %% "doobie-postgres"     % DoobieVersion,
+      "io.circe"        %% "circe-generic"       % CircleVersion
     ),
     testFrameworks += new TestFramework("munit.Framework")
   )

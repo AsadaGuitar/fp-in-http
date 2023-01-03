@@ -16,7 +16,7 @@ import doobie.*
 import doobie.implicits.*
 
 trait UserService[F[_]]:
-  def create(cmd: CreateCommand): EitherT[F, CreateError, Done]
+  def create(cmd: CreateCommand): EitherT[F, CreateError, User.Id]
   def findById(cmd: FindByIdCommand): EitherT[F, FindByIdError, User]
 
 object UserService:
@@ -33,7 +33,7 @@ object UserService:
 
   def impl[F[_]](xa: Transactor[F])(using sync: Sync[F]) = new UserService[F] {
 
-    def create(cmd: CreateCommand): EitherT[F, CreateError, Done] = {
+    def create(cmd: CreateCommand): EitherT[F, CreateError, User.Id] = {
       val CreateCommand(id, name, password) = cmd
       EitherT {
         {
@@ -57,7 +57,7 @@ object UserService:
               closedAt = none
             )
             _ <- UsersRepository.insert(user).transact(xa)
-          yield Done.asRight
+          yield id.asRight
         }
           .handleError {
             case e: CreateError => e.asLeft

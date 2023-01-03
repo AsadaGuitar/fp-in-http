@@ -8,6 +8,7 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits._
 import org.http4s.server.middleware.Logger
 import com.github.asadaguitar.fpinhttp.service.UserService
+import com.github.asadaguitar.fpinhttp.routes.UsersRoutes
 
 object FpinhttpServer:
 
@@ -25,7 +26,7 @@ object FpinhttpServer:
       httpApp = (
         FpinhttpRoutes.helloWorldRoutes[F](helloWorldAlg) <+>
         FpinhttpRoutes.jokeRoutes[F](jokeAlg) <+>
-        FpinhttpRoutes.usersRoutes[F](userAlg)
+        UsersRoutes[F](userAlg)
       ).orNotFound
 
       // With Middlewares in place
