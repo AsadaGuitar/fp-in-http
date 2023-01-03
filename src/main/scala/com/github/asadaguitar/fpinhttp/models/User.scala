@@ -74,9 +74,9 @@ object User:
       )
 
   object implicits:
-    given Show[Id]       = (t: Id) => t
-    given Show[Name]     = (t: Name) => t
+    given Show[Id] = (t: Id) => t
+    given Show[Name] = (t: Name) => t
     given Show[Password] = (t: Password) => t
-    given Meta[Id]       = Id.userIdMeta
-    given Meta[Name]     = Name.userNameMeta
+    given Meta[Id] = Id.userIdMeta
+    given Meta[Name] = Name.userNameMeta
     given Meta[Password] = Password.userPasswordMeta

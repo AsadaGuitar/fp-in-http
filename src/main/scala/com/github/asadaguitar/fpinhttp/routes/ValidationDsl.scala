@@ -19,21 +19,25 @@ import org.http4s.dsl.Http4sDsl
 
 object ValidationDsl:
 
-  def apply[F[_] : Async, A, B](req: Request[F])(
+  def validate[F[_]: Async, A, B](a: A)(
       f: B => F[Response[F]]
-  )(using
-      decoder: EntityDecoder[F, A],
-      validator: Validator[F, A, B]
-  ): F[Response[F]] = {
+  )(using validator: Validator[F, A, B]): F[Response[F]] = {
     val dsl = new Http4sDsl[F] {}
     import dsl.*
     for
-      a <- req.as[A]
       v <- validator.validate(a)
       r <- {
         v match
-          case Valid(a) => f(a)
+          case Valid(a)   => f(a)
           case Invalid(e) => BadRequest(e)
       }
     yield r
   }
+
+  def validateFromRequest[F[_]: Async, A, B](req: Request[F])(
+      f: B => F[Response[F]]
+  )(using
+      decoder: EntityDecoder[F, A],
+      validator: Validator[F, A, B]
+  ): F[Response[F]] =
+    req.as[A].flatMap(this.validate(_)(f))

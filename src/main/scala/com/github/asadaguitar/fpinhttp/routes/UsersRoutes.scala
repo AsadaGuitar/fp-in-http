@@ -24,6 +24,8 @@ import com.github.asadaguitar.fpinhttp.routes.ValidationDsl
 import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
 import java.time.Instant
+import com.github.asadaguitar.fpinhttp.service.UserService.FindByIdCommand
+import com.github.asadaguitar.fpinhttp.AppError.ValidationError
 
 object UsersRoutes:
   import codec.{given, *}
@@ -31,34 +33,30 @@ object UsersRoutes:
   import validator.{given, *}
   import share.codec.{given, *}
 
-  private object codec:
-    import org.http4s.circe.CirceEntityCodec._
-
-    given [F[_]: Concurrent]: EntityDecoder[F, CreateRequestJson] =
-      jsonOf[F, CreateRequestJson]
-
-    given [F[_]]: EntityEncoder[F, CreateResponseJson] = jsonEncoderOf[F, CreateResponseJson]
-
-    given [F[_]]: EntityEncoder[F, FindByIdResponseJson] = jsonEncoderOf[F, FindByIdResponseJson]
-    
-  end codec
-
-  private object protocol:
-
+  private object protocol {
     case class FindByIdResponseJson(id: String, name: String, created_at: Instant)
     case class CreateRequestJson(id: String, name: String, password: String)
     case class CreateResponseJson(id: String)
+  }
 
-  end protocol
+  private object codec {
+    import org.http4s.circe.CirceEntityCodec._
+    
+    given [F[_]]: EntityEncoder[F, FindByIdResponseJson] = jsonEncoderOf[F, FindByIdResponseJson] 
+    given [F[_]: Concurrent]: EntityDecoder[F, CreateRequestJson] = jsonOf[F, CreateRequestJson]
+    given [F[_]]: EntityEncoder[F, CreateResponseJson] = jsonEncoderOf[F, CreateResponseJson]
+  }
 
-  private object validator:
+  private object validator {
 
-    given [F[_]](using
-        F: Monad[F]
-    ): Validator[F, CreateRequestJson, UserService.CreateCommand] with
-      def validate(
-          req: CreateRequestJson
-      ): F[ValidatedNel[AppError.ValidationError, UserService.CreateCommand]] =
+    given [F[_]](using F: Monad[F]): Validator[F, String, UserService.FindByIdCommand] with
+      def validate(a: String): F[ValidatedNel[ValidationError, FindByIdCommand]] = 
+        F.pure {
+          User.Id(a).toValidatedNel.map(UserService.FindByIdCommand.apply)
+        }
+
+    given [F[_]](using F: Monad[F]): Validator[F, CreateRequestJson, UserService.CreateCommand] with
+      def validate(req: CreateRequestJson): F[ValidatedNel[AppError.ValidationError, CreateCommand]] =
         val CreateRequestJson(id, name, password) = req
         F.pure {
           (
@@ -66,10 +64,9 @@ object UsersRoutes:
             User.Name(name).toValidatedNel,
             User.Password(password).toValidatedNel
           )
-            .mapN(UserService.CreateCommand.apply)
+          .mapN(UserService.CreateCommand.apply)
         }
-
-  end validator
+  }
 
   def apply[F[_]](US: UserService[F])(using F: Async[F]) =
     val dsl = new Http4sDsl[F] {}
@@ -79,26 +76,25 @@ object UsersRoutes:
     HttpRoutes.of[F] {
       /** find user by user id */
       case GET -> Root / "users" / id =>
-        User.Id(id) match
-          case Left(value) => BadRequest("not")
-          case Right(value) =>
-            val cmd = UserService.FindByIdCommand(id = value)
-            US.findById(cmd).value.flatMap {
-              case Right(user) => 
-                val User(id, name, _, _, createdAt, _, _) = user
-                Ok(FindByIdResponseJson(id.show, name.show, createdAt))
-              case Left(value) => BadRequest()
-            }
-      /** create user */
-      case request @ POST -> Root / "users" =>
-        ValidationDsl[F, CreateRequestJson, UserService.CreateCommand](
-          request
-        ) { (cmd: UserService.CreateCommand) => 
-          US.create(cmd).value.flatMap { 
-            case Right(id) => 
-              Ok(CreateResponseJson(id = id.show))
-            case Left(error) => 
-              BadRequest(error)
+        ValidationDsl.validate[F, String, UserService.FindByIdCommand](id) { cmd => 
+          US.findById(cmd).value.flatMap {
+            case Right(user) => 
+              val User(id, name, _, _, createdAt, _, _) = user
+              Ok(FindByIdResponseJson(id.show, name.show, createdAt))
+            case Left(value) => BadRequest()
           }
         }
-      }
+
+      /** create user */
+      case req @ POST -> Root / "users" =>
+        ValidationDsl
+          .validateFromRequest[F, CreateRequestJson, UserService.CreateCommand](req){ 
+            (cmd: UserService.CreateCommand) => 
+              US.create(cmd).value.flatMap { 
+                case Right(id) => 
+                  Ok(CreateResponseJson(id = id.show))
+                case Left(error) => 
+                  BadRequest(error)
+              }
+          }
+    }
