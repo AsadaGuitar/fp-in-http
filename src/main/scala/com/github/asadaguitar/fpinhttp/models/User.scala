@@ -6,12 +6,12 @@ import com.github.asadaguitar.fpinhttp.AppError
 import cats.*
 import cats.implicits.*
 
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 
 import com.github.asadaguitar.fpinhttp.implicits.*
 
-case class User(
+final case class User(
     id: User.Id,
     name: User.Name,
     password: User.Password,

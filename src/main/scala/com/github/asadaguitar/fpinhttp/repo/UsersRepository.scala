@@ -24,9 +24,9 @@ object UsersRepository:
     sql"""
         SELECT EXISTS (
           SELECT *
-                FROM users
-                WHERE id = $id
-            )
+          FROM users
+          WHERE id = $id
+        )
         """.query[Boolean].unique
   }
 
@@ -46,24 +46,18 @@ object UsersRepository:
   }
 
   def insert(user: User): ConnectionIO[Int] = {
-    val User(id, name, password, isClosed, createdAt, modifiedAt, closedAt) = user
+    val User(id, name, password, _, createdAt, _, _) = user
     sql"""
         INSERT INTO users(
           id, 
           name, 
-          password,
-          is_closed, 
-          created_at, 
-          modified_at, 
-          closed_at
+          password, 
+          created_at
         ) VALUES (
           $id, 
           $name, 
           $password, 
-          $isClosed, 
           $createdAt, 
-          $modifiedAt, 
-          $closedAt
         )
         """.update.run
   }
